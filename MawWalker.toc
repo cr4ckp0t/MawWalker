@@ -1,0 +1,26 @@
+## Interface: 90005
+## Author: Crackpotx
+## Title: Maw Walker
+## Version: 0.0.1
+## Notes: Utilize TomTom to route plan in the Maw.
+## RequiredDeps: TomTom
+
+Libraries\LibStub\LibStub.lua
+Libraries\CallbackHandler-1.0\CallbackHandler-1.0.xml
+Libraries\AceAddon-3.0\AceAddon-3.0.xml
+Libraries\AceConsole-3.0\AceConsole-3.0.xml
+Libraries\AceLocale-3.0\AceLocale-3.0.xml
+
+Locales\enUS.lua
+Locales\deDE.lua
+Locales\esES.lua
+Locales\esMX.lua
+Locales\frFR.lua
+Locales\itIT.lua
+Locales\koKR.lua
+Locales\ptBR.lua
+Locales\ruRU.lua
+Locales\zhCN.lua
+Locales\zhTW.lua
+
+MawWalker.lua
