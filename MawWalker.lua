@@ -31,13 +31,27 @@ local L = LibStub("AceLocale-3.0"):GetLocale("MawWalker", false)
 
 -- local api cache
 local C_Map_GetBestMapForUnit = C_Map.GetBestMapForUnit
+local floor = math.floor
 local GetAddOnMetadata = _G["GetAddOnMetadata"]
+local GetFriendshipReputation = _G["GetFriendshipReputation"]
 local insert = table.insert
 local ipairs = ipairs
 local pairs = pairs
+local tolower = string.lower
 
 MW.title = GetAddOnMetadata("MawWalker", "Title")
 MW.version = GetAddOnMetadata("MawWalker", "Version")
+
+-- ve'nari is a bit different
+local venariId = 2432
+local repStandings = {
+    [L["dubious"]] = 1,
+    [L["apprehensive"]] = 2,
+    [L["tentative"]] = 3,
+    [L["ambivalent"]] = 4,
+    [L["cordial"]] = 5,
+    [L["appreciative"]] = 6,
+}
 
 -- db defaults
 local defaults = {
@@ -205,6 +219,7 @@ function MW:HandleChatCommand(args)
         self:Print(helpString:format("debug", L["Toggle Addon Debugging"]))
         self:Print((L["|cffffff00/maw load %s|r - %s"]):format(L["<rares|events|all>"], L["Manually Load Waypoints"]))
         self:Print(helpString:format("reload", L["Reload Automatic Waypoints"]))
+        self:Print(helpString:format("rep", L["Print Ve'nari Friendship Status"]))
         self:Print(helpString:format("status", L["Print Current Addon Status"]))
     elseif key == "load" then
         -- if no waypoint type, load them all
@@ -222,16 +237,25 @@ function MW:HandleChatCommand(args)
         self:ClearWaypoints()
         self:UpdateWaypoints()
         self:Print(L["Reloaded automatic waypoints."])
-    elseif key == "status" then
-        self:Print((L["Automatic routing is currently %s!"]):format(GetConfigStatus(self.db.profile.autoRoute)))
-        self:Print((L["Debugging is currently %s!"]):format(GetConfigStatus(self.db.profile.debug)))
-        self:Print((L["There are %d waypoints loaded."]):format(#self.waypoints))
+    elseif key == "rep" or key == "venari" or key == "status" then
+        local _, rep, maxRep, name, text, texture, reaction, threshold, nextThreshold = GetFriendshipReputation(venariId);
+        local hexColor = ("%02x%02x%02x"):format(FACTION_BAR_COLORS[repStandings[tolower(reaction)]].r * 255, FACTION_BAR_COLORS[repStandings[tolower(reaction)]].g * 255, FACTION_BAR_COLORS[repStandings[tolower(reaction)]].b * 255)
+        
+        -- normalize values
+        local realValue = rep - threshold
+        local realMax = nextThreshold - threshold
+        local realPercent = floor((realValue / realMax) * 100)
+        self:Print((L["You are |cff%s%d/%d %s (%d%%)|r with |cff1784d1Ve'nari|r."]):format(hexColor, realValue, realMax, reaction, realPercent))
+        if key == "status" then
+            self:Print((L["Automatic routing is currently %s!"]):format(GetConfigStatus(self.db.profile.autoRoute)))
+            self:Print((L["Debugging is currently %s!"]):format(GetConfigStatus(self.db.profile.debug)))
+            self:Print((L["There are %d waypoints loaded."]):format(#self.waypoints))
+        end
     end
 end
 
 function MW:PLAYER_ENTERING_WORLD(event, ...)
     self.waypoints = {}
-    self:Print(tostring(self.db.profile.autoRoute))
     if self.db.profile.autoRoute then 
         self:ClearWaypoints()
         self:UpdateWaypoints()

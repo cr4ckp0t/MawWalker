@@ -1,7 +1,7 @@
 ## Interface: 90005
 ## Author: Crackpotx
 ## Title: Maw Walker
-## Version: 1.0.0beta
+## Version: 1.0.0
 ## Notes: Utilize TomTom to route plan in the Maw.
 ## RequiredDeps: TomTom
 ## SavedVariables: MawWalkerDB
