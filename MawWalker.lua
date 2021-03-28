@@ -34,10 +34,11 @@ local C_Map_GetBestMapForUnit = C_Map.GetBestMapForUnit
 local floor = math.floor
 local GetAddOnMetadata = _G["GetAddOnMetadata"]
 local GetFriendshipReputation = _G["GetFriendshipReputation"]
+local gsub = string.gsub
 local insert = table.insert
 local ipairs = ipairs
 local pairs = pairs
-local tolower = string.lower
+local lower = string.lower
 
 MW.title = GetAddOnMetadata("MawWalker", "Title")
 MW.version = GetAddOnMetadata("MawWalker", "Version")
@@ -59,6 +60,45 @@ local defaults = {
         autoRoute = true,
         coordType = "all",
         debug = false,
+        rares = {
+            ["adjutant_dekaris"] = true,
+            ["apholeias_herald_of_loss"] = true,
+            ["borr_geth"] = true,
+            ["conjured_death"] = true,
+            ["darklord_taraxis"] = true,
+            ["dolos"] = true,
+            ["eketra"] = true,
+            ["ekphoras_herald_of_grief"] = true,
+            ["eternas_the_tormentor"] = true,
+            ["ikras_the_devourer"] = true,
+            ["morguliax"] = true,
+            ["nascent_devourer"] = true,
+            ["orophea"] = true,
+            ["shadeweaver_zeris"] = true,
+            ["soulforger_rhovus"] = true,
+            ["talaporas_herald_of_pain"] = true,
+            ["thanassos"] = true,
+            ["yero_the_skittish"] = true,
+        },
+        events = {
+            ["agonix"] = true,
+            ["cyrixia"] = true,
+            ["dath_rezara"] = true,
+            ["dartanos"] = true,
+            ["drifting_sorrow"] = true,
+            ["houndmaster_vasanok"] = true,
+            ["malevolent_stygia"] = true,
+            ["krala"] = true,
+            ["odalrik"] = true,
+            ["orrholyn"] = true,
+            ["razkazzar"] = true,
+            ["sanngror_the_torturer"] = true,
+            ["skittering_broodmother"] = true,
+            ["sorath_the_sated"] = true,
+            ["soulsmith_yol_mattar"] = true,
+            ["stygian_incinerator"] = true,
+            ["valis_the_cruel"] = true,
+        },
     }
 }
 
@@ -118,11 +158,63 @@ local options = {
                 },
             },
         },
+        waypoints = {
+            type = "group",
+            order = 4,
+            name = L["Waypoints"],
+            guiInline = true,
+            args = {
+                rares = {
+                    type = "multiselect",
+                    order = 1,
+                    name = L["Rares"],
+                    desc = L["Choose which waypoints for rares will be added to TomTom."],
+                    values = function()
+                        local rares = MW:LoadRares()
+                        local valuesList = {}
+                        if not rares or #rares == 0 then
+                            return {}
+                        else
+                            for _, rare in pairs(rares) do
+                                valuesList[lower(rare.name:gsub(" ", "_"):gsub(",", ""):gsub("-", "_"))] = rare.name
+                            end
+                            return valuesList
+                        end
+                    end,
+                    get = function(_, key) return MW.db.profile.rares[key] end,
+                    set = function(_, key, value) MW.db.profile.rares[key] = value; MW:UpdateWaypoints() end,
+                },
+                events = {
+                    type = "multiselect",
+                    order = 2,
+                    name = L["Events"],
+                    desc = L["Choose which waypoints for events will be added to TomTom."],
+                    values = function()
+                        local events = MW:LoadEvents()
+                        local valuesList = {}
+                        if not events or #events == 0 then
+                            return {}
+                        else
+                            for _, event in pairs(events) do
+                                valuesList[lower(event.name:gsub(" ", "_"):gsub(",", ""):gsub("-", "_"))] = event.name
+                            end
+                            return valuesList
+                        end
+                    end,
+                    get = function(_, key) return MW.db.profile.events[key] end,
+                    set = function(_, key, value) MW.db.profile.events[key] = value; MW:UpdateWaypoints() end,
+                },
+            },
+        },
     }
 }
 
 -- we need tomtom
 if not TomTom then return end
+
+local function GetWaypointKey(key)
+    return lower(key:gsub(" ", "_"):gsub(",", ""):gsub("-", ""))
+end
 
 local function GetConfigStatus(configVar)
 	return configVar == true and ("|cff00ff00%s|r"):format(L["ENABLED"]) or ("|cffff0000%s|r"):format(L["DISABLED"])
@@ -152,29 +244,36 @@ function MW:UpdateWaypoints(coordType)
         self:ClearWaypoints()
     end
 
+    -- the maw is 1543
     if mapId == 1543 then
         if coordType == "all" then
             local coords = ConcatTables(self.events, self.rares)
             if #coords ~= 0 then
                 for _, coord in pairs(coords) do
-                    self.waypoints[#self.waypoints + 1] = TomTom:AddWaypoint(mapId, coord.x / 100, coord.y / 100, {
-                        title = coord.name,
-                        persistent = false,
-                        minimap = true,
-                        world = true,
-                    })
+                    local keyName = GetWaypointKey(coord.name)
+                    if self.db.profile.rares[keyName] or self.db.profile.events[keyName] then
+                        self.waypoints[#self.waypoints + 1] = TomTom:AddWaypoint(mapId, coord.x / 100, coord.y / 100, {
+                            title = coord.name,
+                            persistent = false,
+                            minimap = true,
+                            world = true,
+                        })
+                    end
                 end
             end
         elseif (coordType == "events" or coordType == "rares") then
             local coords = coordType == "events" and self.events or self.rares
             if #coords ~= 0 then
                 for _, coord in pairs(coords) do
-                    self.waypoints[#self.waypoints + 1] = TomTom:AddWaypoint(mapId, coord.x / 100, coord.y / 100, {
-                        title = coord.name,
-                        persistent = false,
-                        minimap = true,
-                        world = true,
-                    })
+                    local keyName = GetWaypointKey(coord.name)
+                    if self.db.profile.rares[keyName] or self.db.profile.events[keyName] then
+                        self.waypoints[#self.waypoints + 1] = TomTom:AddWaypoint(mapId, coord.x / 100, coord.y / 100, {
+                            title = coord.name,
+                            persistent = false,
+                            minimap = true,
+                            world = true,
+                        })
+                    end
                 end
             end
         else
@@ -239,7 +338,7 @@ function MW:HandleChatCommand(args)
         self:Print(L["Reloaded automatic waypoints."])
     elseif key == "rep" or key == "venari" or key == "status" then
         local _, rep, maxRep, name, text, texture, reaction, threshold, nextThreshold = GetFriendshipReputation(venariId);
-        local hexColor = ("%02x%02x%02x"):format(FACTION_BAR_COLORS[repStandings[tolower(reaction)]].r * 255, FACTION_BAR_COLORS[repStandings[tolower(reaction)]].g * 255, FACTION_BAR_COLORS[repStandings[tolower(reaction)]].b * 255)
+        local hexColor = ("%02x%02x%02x"):format(FACTION_BAR_COLORS[repStandings[lower(reaction)]].r * 255, FACTION_BAR_COLORS[repStandings[lower(reaction)]].g * 255, FACTION_BAR_COLORS[repStandings[lower(reaction)]].b * 255)
         
         -- normalize values
         local realValue = rep - threshold
@@ -290,6 +389,15 @@ function MW:OnInitialize()
     -- load the events and rares
     self.events = self:LoadEvents()
     self.rares = self:LoadRares()
+end
+
+function MW:GenerateOptionsList(listType)
+    local optionsList = listType == "rares" and MW:LoadRares() or MW:LoadEvents()
+    local defaultsList = {}
+    for _, val in pairs(optionsList) do
+        defaultsList[val.name.lower().replace(" ", "_").replace(",", "")] = true
+    end
+    return defaultsList
 end
 
 function MW:LoadEvents()
