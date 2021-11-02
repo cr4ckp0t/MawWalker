@@ -1,5 +1,5 @@
 -------------------------------------------------------------------------------
--- Maw Walker By Crackpot (US, Arthas)
+-- Maw Walker By Crackpot (US, Illidan)
 -------------------------------------------------------------------------------
 
 --[[---------------------------------------------------------------------------
@@ -24,7 +24,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
----------------------------------------------------------------------------]]--
+---------------------------------------------------------------------------]] --
 
 local MW = LibStub("AceAddon-3.0"):NewAddon("MawWalker", "AceConsole-3.0", "AceEvent-3.0")
 local L = LibStub("AceLocale-3.0"):GetLocale("MawWalker", false)
@@ -51,7 +51,7 @@ local repStandings = {
     [L["tentative"]] = 3,
     [L["ambivalent"]] = 4,
     [L["cordial"]] = 5,
-    [L["appreciative"]] = 6,
+    [L["appreciative"]] = 6
 }
 
 -- db defaults
@@ -78,7 +78,7 @@ local defaults = {
             ["soulforger_rhovus"] = true,
             ["talaporas_herald_of_pain"] = true,
             ["thanassos"] = true,
-            ["yero_the_skittish"] = true,
+            ["yero_the_skittish"] = true
         },
         events = {
             ["agonix"] = true,
@@ -97,8 +97,8 @@ local defaults = {
             ["sorath_the_sated"] = true,
             ["soulsmith_yol_mattar"] = true,
             ["stygian_incinerator"] = true,
-            ["valis_the_cruel"] = true,
-        },
+            ["valis_the_cruel"] = true
+        }
     }
 }
 
@@ -111,15 +111,15 @@ local options = {
         header = {
             type = "header",
             order = 1,
-			name = (L["|cffff7d0a%s:|r %s"]):format(L["Version"], MW.version),
-			width = "full",
+            name = (L["|cffff7d0a%s:|r %s"]):format(L["Version"], MW.version),
+            width = "full"
         },
         space = {
-			type = "description",
-			order = 2,
-			name = "",
-			width = "full",
-		},
+            type = "description",
+            order = 2,
+            name = "",
+            width = "full"
+        },
         general = {
             type = "group",
             order = 3,
@@ -131,16 +131,27 @@ local options = {
                     order = 1,
                     name = L["Debugging"],
                     desc = L["Enable this for verbose debugging output. This should generally remain off."],
-                    get = function(info) return MW.db.profile.debug end,
-                    set = function(info, value) MW.db.profile.debug = value end,
+                    get = function(info)
+                        return MW.db.profile.debug
+                    end,
+                    set = function(info, value)
+                        MW.db.profile.debug = value
+                    end
                 },
                 autoRoute = {
                     type = "toggle",
                     order = 2,
                     name = L["Automatic Routing"],
-                    desc = L["Automatically add the waypoints to TomTom when you enter The Maw.\n\n|cffff0000You can use the chat command to load the waypoints manually.|r"],
-                    get = function(info) return MW.db.profile.autoRoute end,
-                    set = function(info, value) MW.db.profile.autoRoute = value; MW:UpdateWaypoints() end,
+                    desc = L[
+                        "Automatically add the waypoints to TomTom when you enter The Maw.\n\n|cffff0000You can use the chat command to load the waypoints manually.|r"
+                    ],
+                    get = function(info)
+                        return MW.db.profile.autoRoute
+                    end,
+                    set = function(info, value)
+                        MW.db.profile.autoRoute = value
+                        MW:UpdateWaypoints()
+                    end
                 },
                 coordType = {
                     type = "select",
@@ -151,12 +162,20 @@ local options = {
                         ["all"] = L["All Coordinates"],
                         ["events"] = L["Events Only"],
                         ["rares"] = L["Rares Only"],
+                        ["relics"] = L["Relics Only"]
                     },
-                    disabled = function() return not MW.db.profile.autoRoute end,
-                    get = function(info) return MW.db.profile.coordType end,
-                    set = function(info, value) MW.db.profile.coordType = value; MW:UpdateWaypoints() end,
-                },
-            },
+                    disabled = function()
+                        return not MW.db.profile.autoRoute
+                    end,
+                    get = function(info)
+                        return MW.db.profile.coordType
+                    end,
+                    set = function(info, value)
+                        MW.db.profile.coordType = value
+                        MW:UpdateWaypoints()
+                    end
+                }
+            }
         },
         waypoints = {
             type = "group",
@@ -181,8 +200,13 @@ local options = {
                             return valuesList
                         end
                     end,
-                    get = function(_, key) return MW.db.profile.rares[key] end,
-                    set = function(_, key, value) MW.db.profile.rares[key] = value; MW:UpdateWaypoints() end,
+                    get = function(_, key)
+                        return MW.db.profile.rares[key]
+                    end,
+                    set = function(_, key, value)
+                        MW.db.profile.rares[key] = value
+                        MW:UpdateWaypoints()
+                    end
                 },
                 events = {
                     type = "multiselect",
@@ -201,23 +225,47 @@ local options = {
                             return valuesList
                         end
                     end,
-                    get = function(_, key) return MW.db.profile.events[key] end,
-                    set = function(_, key, value) MW.db.profile.events[key] = value; MW:UpdateWaypoints() end,
+                    get = function(_, key)
+                        return MW.db.profile.events[key]
+                    end,
+                    set = function(_, key, value)
+                        MW.db.profile.events[key] = value
+                        MW:UpdateWaypoints()
+                    end
                 },
-            },
-        },
+                relics = {
+                    type = "multiselect",
+                    order = 3,
+                    name = L["Relics"],
+                    desc = L["Choose which waypoints for relics will be added to TomTom."],
+                    values = function()
+                        local relics = MW:LoadRelics()
+                        local valuesList = {}
+                        if not relics or #relics == 0 then
+                            return {}
+                        else
+                            for _, relic in pairs(relics) do
+                                valuesList[lower(event.name:gsub(" ", "_"):gsub(",", ""):gsub("-", "_"))] = relic.name
+                            end
+                        end
+                    end
+                }
+            }
+        }
     }
 }
 
 -- we need tomtom
-if not TomTom then return end
+if not TomTom then
+    return
+end
 
 local function GetWaypointKey(key)
     return lower(key:gsub(" ", "_"):gsub(",", ""):gsub("-", ""))
 end
 
 local function GetConfigStatus(configVar)
-	return configVar == true and ("|cff00ff00%s|r"):format(L["ENABLED"]) or ("|cffff0000%s|r"):format(L["DISABLED"])
+    return configVar == true and ("|cff00ff00%s|r"):format(L["ENABLED"]) or ("|cffff0000%s|r"):format(L["DISABLED"])
 end
 
 local function ConcatTables(t1, t2)
@@ -228,7 +276,9 @@ local function ConcatTables(t1, t2)
 end
 
 function MW:ClearWaypoints()
-    if self.waypoints == nil or #self.waypoints == 0 then return end
+    if self.waypoints == nil or #self.waypoints == 0 then
+        return
+    end
     for _, point in pairs(self.waypoints) do
         TomTom:RemoveWaypoint(point)
     end
@@ -252,12 +302,18 @@ function MW:UpdateWaypoints(coordType)
                 for _, coord in pairs(coords) do
                     local keyName = GetWaypointKey(coord.name)
                     if self.db.profile.rares[keyName] or self.db.profile.events[keyName] then
-                        self.waypoints[#self.waypoints + 1] = TomTom:AddWaypoint(mapId, coord.x / 100, coord.y / 100, {
-                            title = coord.name,
-                            persistent = false,
-                            minimap = true,
-                            world = true,
-                        })
+                        self.waypoints[#self.waypoints + 1] =
+                            TomTom:AddWaypoint(
+                            mapId,
+                            coord.x / 100,
+                            coord.y / 100,
+                            {
+                                title = coord.name,
+                                persistent = false,
+                                minimap = true,
+                                world = true
+                            }
+                        )
                     end
                 end
             end
@@ -267,12 +323,18 @@ function MW:UpdateWaypoints(coordType)
                 for _, coord in pairs(coords) do
                     local keyName = GetWaypointKey(coord.name)
                     if self.db.profile.rares[keyName] or self.db.profile.events[keyName] then
-                        self.waypoints[#self.waypoints + 1] = TomTom:AddWaypoint(mapId, coord.x / 100, coord.y / 100, {
-                            title = coord.name,
-                            persistent = false,
-                            minimap = true,
-                            world = true,
-                        })
+                        self.waypoints[#self.waypoints + 1] =
+                            TomTom:AddWaypoint(
+                            mapId,
+                            coord.x / 100,
+                            coord.y / 100,
+                            {
+                                title = coord.name,
+                                persistent = false,
+                                minimap = true,
+                                world = true
+                            }
+                        )
                     end
                 end
             end
@@ -288,7 +350,7 @@ function MW:ZoneChanged(event, ...)
     if self.db.profile.autoRoute then
         self:UpdateWaypoints()
     end
-end 
+end
 
 function MW:HandleChatCommand(args)
     local key, subKey = self:GetArgs(args, 2)
@@ -316,7 +378,12 @@ function MW:HandleChatCommand(args)
         self:Print(helpString:format("config", L["Open Configuration Page"]))
         self:Print(helpString:format("count", L["Print Number of Waypoints"]))
         self:Print(helpString:format("debug", L["Toggle Addon Debugging"]))
-        self:Print((L["|cffffff00/maw load %s|r - %s"]):format(L["<rares|events|all>"], L["Manually Load Waypoints"]))
+        self:Print(
+            (L["|cffffff00/maw load %s|r - %s"]):format(
+                L["<rares|events%|relics|keys|all>"],
+                L["Manually Load Waypoints"]
+            )
+        )
         self:Print(helpString:format("reload", L["Reload Automatic Waypoints"]))
         self:Print(helpString:format("rep", L["Print Ve'nari Friendship Status"]))
         self:Print(helpString:format("status", L["Print Current Addon Status"]))
@@ -325,26 +392,40 @@ function MW:HandleChatCommand(args)
         if subKey == nil or subKey == "" then
             subKey = "all"
         end
-        if subKey == "all" or subKey == "events" or subKey == "rares" then
+        if subKey == "all" or subKey == "events" or subKey == "rares" or subKey == "relics" or subKey == "keys" then
             self:ClearWaypoints()
             self:UpdateWaypoints(subKey)
             self:Print((L["Loaded waypoints for %s."]):format(subKey))
         else
-            self:Print((L["Unknown waypoint type \"%s\"."]):format(subKey))
+            self:Print((L['Unknown waypoint type "%s".']):format(subKey))
         end
     elseif key == "reload" then
         self:ClearWaypoints()
         self:UpdateWaypoints()
         self:Print(L["Reloaded automatic waypoints."])
     elseif key == "rep" or key == "venari" or key == "status" then
-        local _, rep, maxRep, name, text, texture, reaction, threshold, nextThreshold = GetFriendshipReputation(venariId);
-        local hexColor = ("%02x%02x%02x"):format(FACTION_BAR_COLORS[repStandings[lower(reaction)]].r * 255, FACTION_BAR_COLORS[repStandings[lower(reaction)]].g * 255, FACTION_BAR_COLORS[repStandings[lower(reaction)]].b * 255)
-        
+        local _, rep, maxRep, name, text, texture, reaction, threshold, nextThreshold =
+            GetFriendshipReputation(venariId)
+        local hexColor =
+            ("%02x%02x%02x"):format(
+            FACTION_BAR_COLORS[repStandings[lower(reaction)]].r * 255,
+            FACTION_BAR_COLORS[repStandings[lower(reaction)]].g * 255,
+            FACTION_BAR_COLORS[repStandings[lower(reaction)]].b * 255
+        )
+
         -- normalize values
         local realValue = rep - threshold
         local realMax = nextThreshold - threshold
         local realPercent = floor((realValue / realMax) * 100)
-        self:Print((L["You are |cff%s%d/%d %s (%d%%)|r with |cff1784d1Ve'nari|r."]):format(hexColor, realValue, realMax, reaction, realPercent))
+        self:Print(
+            (L["You are |cff%s%d/%d %s (%d%%)|r with |cff1784d1Ve'nari|r."]):format(
+                hexColor,
+                realValue,
+                realMax,
+                reaction,
+                realPercent
+            )
+        )
         if key == "status" then
             self:Print((L["Automatic routing is currently %s!"]):format(GetConfigStatus(self.db.profile.autoRoute)))
             self:Print((L["Debugging is currently %s!"]):format(GetConfigStatus(self.db.profile.debug)))
@@ -355,7 +436,7 @@ end
 
 function MW:PLAYER_ENTERING_WORLD(event, ...)
     self.waypoints = {}
-    if self.db.profile.autoRoute then 
+    if self.db.profile.autoRoute then
         self:ClearWaypoints()
         self:UpdateWaypoints()
     end
@@ -418,7 +499,7 @@ function MW:LoadEvents()
         {name = "Sorath the Sated", x = 21.8, y = 30.6},
         {name = "Soulsmith Yol-Mattar", x = 36.6, y = 37.2},
         {name = "Stygian Incinerator", x = 36.6, y = 44.4},
-        {name = "Valis the Cruel", x = 40.6, y = 59.6},
+        {name = "Valis the Cruel", x = 40.6, y = 59.6}
     }
 end
 
@@ -441,6 +522,31 @@ function MW:LoadRares()
         {name = "Soulforger Rhovus", x = 35.0, y = 42.0},
         {name = "Talaporas, Herald of Pain", x = 28.6, y = 11.6},
         {name = "Thanassos", x = 27.4, y = 71.3},
-        {name = "Yero the Skittish", x = 37.6, y = 65.6},
+        {name = "Yero the Skittish", x = 37.6, y = 65.6}
+    }
+end
+
+function MW:LoadRelics()
+    return {
+        {name = "Invasive Mawshroom", x = 39.7, y = 30.8},
+        {name = "Invasive Mawshroom", x = 39.7, y = 34.9},
+        {name = "Invasive Mawshroom", x = 35.6, y = 34.5},
+        {name = "Invasive Mawshroom", x = 45.6, y = 34.3},
+        {name = "Invasive Mawshroom", x = 53.7, y = 37.9},
+        {name = "Invasive Mawshroom", x = 54.2, y = 41.2},
+        {name = "Mawsworn Cache", x = 61.2, y = 58.0},
+        {name = "Mawsworn Cache", x = 56.4, y = 69.5},
+        {name = "Nest of Unusual Materials", x = 63.7, y = 31.5},
+        {name = "Nest of Unusual Materials", x = 61.9, y = 43.9},
+        {name = "Nest of Unusual Materials", x = 41.0, y = 39.7},
+        {name = "Nest of Unusual Materials", x = 42.5, y = 54.8},
+        {name = "Nest of Unusual Materials", x = 52.4, y = 72.7},
+        {name = "Pile of Bones", x = 37.1, y = 53.7},
+        {name = "Pile of Bones", x = 38.28, y = 51.63},
+        {name = "Pile of Bones", x = 31.26, y = 60.01},
+        {name = "Relic Cache", x = 57.3, y = 34.9},
+        {name = "Relic Cache", x = 55.8, y = 37.3},
+        {name = "Relic Cache", x = 54.9, y = 50.2},
+        {name = "Relic Cache", x = 53.9, y = 76.1}
     }
 end
